@@ -1,0 +1,38 @@
+{
+  "name": "lexaflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LexaFlow - Modern English Learning Application",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm --parallel -r build",
+    "test": "pnpm --parallel -r test",
+    "test:unit": "pnpm --parallel -r test:unit",
+    "test:api": "pnpm --filter backend test:api",
+    "test:e2e": "pnpm --filter frontend test:e2e",
+    "lint": "pnpm --parallel -r lint",
+    "lint:fix": "pnpm --parallel -r lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "db:generate": "pnpm --filter backend db:generate",
+    "db:migrate": "pnpm --filter backend db:migrate",
+    "db:push": "pnpm --filter backend db:push",
+    "db:seed": "pnpm --filter backend db:seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "clean": "pnpm --parallel -r clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "prettier": "^3.1.0",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.12.0"
+}

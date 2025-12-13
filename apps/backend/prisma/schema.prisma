@@ -1,0 +1,421 @@
+// Prisma Schema for LexaFlow
+// English Learning Application
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =============================================================================
+// USER MANAGEMENT
+// =============================================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String?
+  googleId          String?   @unique
+  
+  // Profile
+  firstName         String?
+  lastName          String?
+  avatarUrl         String?
+  
+  // Learning preferences
+  level             Level     @default(A1)
+  preferredStyle    ResponseStyle @default(ADAPTIVE)
+  useFormal         Boolean   @default(false) // vouvoiement vs tutoiement
+  
+  // Account status
+  role              Role      @default(USER)
+  isEmailVerified   Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  
+  // 2FA
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastLoginAt       DateTime?
+  
+  // GDPR
+  consentGiven      Boolean   @default(false)
+  consentDate       DateTime?
+  dataExportedAt    DateTime?
+  
+  // Relations
+  refreshTokens     RefreshToken[]
+  recoveryCodes     RecoveryCode[]
+  exerciseResults   ExerciseResult[]
+  courseProgress    CourseProgress[]
+  badges            UserBadge[]
+  streaks           Streak[]
+  emailVerifications EmailVerification[]
+  passwordResets    PasswordReset[]
+  activityLogs      ActivityLog[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+model RefreshToken {
+  id          String   @id @default(cuid())
+  token       String   @unique
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+  userAgent   String?
+  ipAddress   String?
+
+  @@index([userId])
+  @@index([token])
+}
+
+model RecoveryCode {
+  id        String   @id @default(cuid())
+  code      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerification {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
+
+// =============================================================================
+// EXERCISES
+// =============================================================================
+
+model Exercise {
+  id          String        @id @default(cuid())
+  type        ExerciseType
+  level       Level
+  theme       String
+  title       String
+  description String?
+  
+  // Content (stored as JSON)
+  content     Json
+  
+  // AI generation metadata
+  promptVersion String?
+  generatedAt   DateTime?
+  
+  // Stats
+  timesCompleted Int       @default(0)
+  averageScore   Float?
+  
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relations
+  results     ExerciseResult[]
+
+  @@index([type, level])
+  @@index([theme])
+}
+
+model ExerciseResult {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exerciseId  String
+  exercise    Exercise @relation(fields: [exerciseId], references: [id])
+  
+  // Results
+  score       Float
+  maxScore    Float
+  percentage  Float
+  timeSpent   Int      // in seconds
+  
+  // Answers (stored as JSON)
+  answers     Json
+  feedback    Json?
+  
+  // AI evaluation
+  aiEvaluation Json?
+  
+  completedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([exerciseId])
+  @@index([completedAt])
+}
+
+// =============================================================================
+// COURSES
+// =============================================================================
+
+model Course {
+  id          String      @id @default(cuid())
+  type        CourseType
+  level       Level
+  title       String
+  description String?
+  order       Int         @default(0)
+  
+  // Content
+  content     Json
+  
+  // Metadata
+  duration    Int?        // estimated minutes
+  isPublished Boolean     @default(false)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relations
+  lessons     Lesson[]
+  progress    CourseProgress[]
+
+  @@index([type, level])
+  @@index([order])
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  title       String
+  content     Json
+  order       Int      @default(0)
+  
+  // Exercises within lesson
+  exerciseIds String[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model CourseProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  
+  completedLessons String[]
+  currentLesson    String?
+  progressPercent  Float    @default(0)
+  
+  startedAt       DateTime @default(now())
+  completedAt     DateTime?
+  lastAccessedAt  DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId])
+}
+
+// =============================================================================
+// GAMIFICATION
+// =============================================================================
+
+model Badge {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String
+  description String
+  iconUrl     String?
+  
+  // Trigger conditions (stored as JSON)
+  conditions  Json
+  
+  // Rarity
+  rarity      BadgeRarity @default(COMMON)
+  points      Int         @default(10)
+  
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  
+  // Relations
+  users       UserBadge[]
+
+  @@index([code])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId   String
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+  
+  earnedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model Streak {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActiveDate DateTime
+  
+  // Calendar data (JSON array of dates)
+  activeDates   Json
+  
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId])
+  @@index([userId])
+}
+
+// =============================================================================
+// PLACEMENT TEST
+// =============================================================================
+
+model PlacementTest {
+  id          String   @id @default(cuid())
+  userId      String
+  
+  // Results
+  score       Float
+  level       Level
+  passed      Boolean
+  
+  // Answers
+  answers     Json
+  analysis    Json?
+  
+  completedAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// =============================================================================
+// AI PROMPTS MANAGEMENT
+// =============================================================================
+
+model AIPrompt {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String
+  template    String   @db.Text
+  variables   String[]
+  
+  // Versioning
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+}
+
+// =============================================================================
+// ACTIVITY LOGS
+// =============================================================================
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action      String
+  resource    String
+  resourceId  String?
+  metadata    Json?
+  
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum Level {
+  A1
+  A2
+  B1
+  B2
+  C1
+  C2
+}
+
+enum ExerciseType {
+  INFINITIVE_VERBS
+  CONJUGATION
+  VOCABULARY
+  GRAMMAR
+  READING
+  LISTENING
+  TRANSLATION
+  FILL_BLANK
+  MULTIPLE_CHOICE
+  MATCHING
+}
+
+enum CourseType {
+  GRAMMAR
+  CONJUGATION
+  VOCABULARY
+  CONVERSATION
+}
+
+enum ResponseStyle {
+  SHORT
+  DETAILED
+  ADAPTIVE
+}
+
+enum BadgeRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
