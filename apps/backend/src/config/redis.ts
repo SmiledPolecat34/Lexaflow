@@ -3,9 +3,9 @@ import { env, isDev } from './env.js';
 
 let redis: Redis | null = null;
 
-export function getRedis(): Redis | null {
+export function getCacheRedis(): Redis | null {
   if (redis) return redis;
-  
+
   if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
     redis = new Redis({
       url: env.UPSTASH_REDIS_REST_URL,
@@ -14,16 +14,16 @@ export function getRedis(): Redis | null {
     console.log('✅ Upstash Redis connected');
     return redis;
   }
-  
+
   console.warn('⚠️ Redis not configured, caching disabled');
   return null;
 }
 
 // Cache utilities
 export async function cacheGet<T>(key: string): Promise<T | null> {
-  const r = getRedis();
+  const r = getCacheRedis();
   if (!r) return null;
-  
+
   try {
     return await r.get<T>(key);
   } catch (error) {
@@ -37,9 +37,9 @@ export async function cacheSet(
   value: unknown,
   ttlSeconds?: number
 ): Promise<boolean> {
-  const r = getRedis();
+  const r = getCacheRedis();
   if (!r) return false;
-  
+
   try {
     if (ttlSeconds) {
       await r.set(key, value, { ex: ttlSeconds });
@@ -54,9 +54,9 @@ export async function cacheSet(
 }
 
 export async function cacheDel(key: string): Promise<boolean> {
-  const r = getRedis();
+  const r = getCacheRedis();
   if (!r) return false;
-  
+
   try {
     await r.del(key);
     return true;
@@ -67,9 +67,9 @@ export async function cacheDel(key: string): Promise<boolean> {
 }
 
 export async function cacheExists(key: string): Promise<boolean> {
-  const r = getRedis();
+  const r = getCacheRedis();
   if (!r) return false;
-  
+
   try {
     const exists = await r.exists(key);
     return exists === 1;
@@ -122,22 +122,22 @@ export async function checkAIRateLimit(userId: string): Promise<{
   remaining: number;
   resetIn: number;
 }> {
-  const r = getRedis();
+  const r = getCacheRedis();
   if (!r) return { allowed: true, remaining: env.AI_RATE_LIMIT_PER_MINUTE, resetIn: 0 };
-  
+
   const key = `ai_rate_limit:${userId}`;
   const windowMs = 60000; // 1 minute
-  
+
   try {
     const current = await r.incr(key);
-    
+
     if (current === 1) {
       await r.expire(key, 60);
     }
-    
+
     const ttl = await r.ttl(key);
     const remaining = Math.max(0, env.AI_RATE_LIMIT_PER_MINUTE - current);
-    
+
     return {
       allowed: current <= env.AI_RATE_LIMIT_PER_MINUTE,
       remaining,

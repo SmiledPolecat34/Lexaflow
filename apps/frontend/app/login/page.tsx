@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
   const { login, isLoading, error } = useAuth();
-  
+
   const {
     register,
     handleSubmit,
@@ -159,7 +159,10 @@ export default function LoginPage() {
             <button
               type="button"
               className="btn btn-outline btn-lg full-width google-btn"
-              onClick={() => {/* Google OAuth */}}
+              onClick={() => {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+                window.location.href = `${apiUrl}/api/auth/google`;
+              }}
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path

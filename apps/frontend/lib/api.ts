@@ -133,6 +133,7 @@ export interface RegisterParams {
   password: string;
   firstName?: string;
   lastName?: string;
+  invitationCode: string;
 }
 
 export interface AuthResponse {

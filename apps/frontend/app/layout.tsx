@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Providers } from '@/components/providers';
+import Header from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -87,7 +88,10 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Aller au contenu principal
         </a>
-        <Providers>{children}</Providers>
+        <Providers>
+          <Header />
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../config/database.js';
-import { getRedis } from '../config/redis.js';
+import { getCacheRedis } from '../config/redis-cache.js';
 
 export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   app.get('/health', {
@@ -30,7 +30,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
 
     // Check Redis
     try {
-      const redis = getRedis();
+      const redis = getCacheRedis();
       if (redis) {
         await redis.ping();
         checks.services.redis = 'healthy';

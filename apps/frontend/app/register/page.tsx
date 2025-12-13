@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Mail, Lock, User, Loader2, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Loader2, Check, Ticket } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RegisterForm {
+  invitationCode: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -22,10 +24,26 @@ const passwordRequirements = [
   { id: 'number', label: 'Un chiffre', regex: /\d/ },
 ];
 
+const errorMessages: Record<string, string> = {
+  invalid_invitation_code: 'Code d\'invitation invalide',
+  invalid_state: 'Session expirée. Veuillez réessayer.',
+  no_code: 'Autorisation refusée.',
+  oauth_failed: 'Erreur lors de la connexion avec Google.',
+};
+
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [urlError, setUrlError] = useState<string | null>(null);
   const { register: registerUser, isLoading, error } = useAuth();
-  
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setUrlError(errorMessages[errorParam] || 'Une erreur est survenue.');
+    }
+  }, [searchParams]);
+
   const {
     register,
     handleSubmit,
@@ -35,13 +53,27 @@ export default function RegisterPage() {
 
   const password = watch('password', '');
 
+  const invitationCode = watch('invitationCode', '');
+
   const onSubmit = async (data: RegisterForm) => {
     await registerUser({
       email: data.email,
       password: data.password,
       firstName: data.firstName,
       lastName: data.lastName,
+      invitationCode: data.invitationCode,
     });
+  };
+
+  const handleGoogleRegister = () => {
+    if (!invitationCode) {
+      alert('Veuillez entrer un code d\'invitation');
+      return;
+    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Store invitation code in sessionStorage for Google OAuth callback
+    sessionStorage.setItem('invitationCode', invitationCode);
+    window.location.href = `${apiUrl}/api/auth/google?invitationCode=${encodeURIComponent(invitationCode)}`;
   };
 
   return (
@@ -57,11 +89,32 @@ export default function RegisterPage() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
-            {error && (
+            {(error || urlError) && (
               <div className="alert alert-error" role="alert">
-                {error}
+                {error || urlError}
               </div>
             )}
+
+            <div className="form-group invitation-group">
+              <label htmlFor="invitationCode" className="form-label">
+                Code d'invitation <span className="required">*</span>
+              </label>
+              <div className="input-with-icon">
+                <Ticket className="input-icon" size={18} />
+                <input
+                  id="invitationCode"
+                  type="text"
+                  className="form-input"
+                  placeholder="Entrez votre code d'invitation"
+                  {...register('invitationCode', {
+                    required: 'Code d\'invitation requis',
+                  })}
+                />
+              </div>
+              {errors.invitationCode && (
+                <p className="form-error">{errors.invitationCode.message}</p>
+              )}
+            </div>
 
             <div className="form-row">
               <div className="form-group">
@@ -160,7 +213,7 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              
+
               {/* Password requirements */}
               <div className="password-requirements">
                 {passwordRequirements.map((req) => (
@@ -238,6 +291,7 @@ export default function RegisterPage() {
             <button
               type="button"
               className="btn btn-outline btn-lg full-width google-btn"
+              onClick={handleGoogleRegister}
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -419,6 +473,22 @@ export default function RegisterPage() {
           padding: 0.75rem 1rem;
           border-radius: var(--radius-lg);
           margin-bottom: 1rem;
+        }
+
+        .invitation-group {
+          margin-bottom: 1.5rem;
+          padding-bottom: 1.5rem;
+          border-bottom: 1px solid var(--border);
+        }
+
+        .invitation-group .form-input {
+          font-family: monospace;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        .required {
+          color: var(--error-600);
         }
       `}</style>
     </main>
