@@ -1,7 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, TrendingUp, Target, Award, Calendar, Flame, BookOpen, CheckCircle } from 'lucide-react';
+import {
+    ArrowLeft,
+    Target,
+    Award,
+    Flame,
+    BookOpen,
+    CheckCircle
+} from 'lucide-react';
 
 export default function ProgressPage() {
     return (

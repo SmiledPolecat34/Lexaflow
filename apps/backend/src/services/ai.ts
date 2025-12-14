@@ -9,16 +9,16 @@ let groqClient: Groq | null = null;
 
 function getGroqClient(): Groq | null {
   if (groqClient) return groqClient;
-  
+
   if (!env.GROQ_API_KEY) {
     console.warn('⚠️ AI service not configured (GROQ_API_KEY missing)');
     return null;
   }
-  
+
   groqClient = new Groq({
     apiKey: env.GROQ_API_KEY,
   });
-  
+
   return groqClient;
 }
 
@@ -507,15 +507,17 @@ export function calculatePlacementLevel(
 
   for (const level of levels) {
     const levelData = levelScores[level];
-    if (levelData.total > 0) {
-      const levelScore = (levelData.correct / levelData.total) * 100;
-      if (levelScore >= 60) {
-        determinedLevel = level;
-      } else {
-        break;
-      }
+    if (!levelData || levelData.total === 0) continue;
+
+    const levelScore = (levelData.correct / levelData.total) * 100;
+
+    if (levelScore >= 60) {
+      determinedLevel = level;
+    } else {
+      break;
     }
   }
+
 
   return { level: determinedLevel, score, passed };
 }

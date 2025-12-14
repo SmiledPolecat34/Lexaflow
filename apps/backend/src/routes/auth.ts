@@ -870,7 +870,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     }
 
     const clientId = env.GOOGLE_CLIENT_ID;
-    const redirectUri = env.GOOGLE_CALLBACK_URL || `${env.FRONTEND_URL}/api/auth/google/callback`;
+    const redirectUri = env.GOOGLE_CALLBACK_URL || `${env.BACKEND_URL}/api/auth/google/callback`;
 
     const scope = encodeURIComponent('email profile');
     const state = generateToken().substring(0, 32);
@@ -950,7 +950,7 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
           code,
           client_id: env.GOOGLE_CLIENT_ID,
           client_secret: env.GOOGLE_CLIENT_SECRET,
-          redirect_uri: env.GOOGLE_CALLBACK_URL || `${env.FRONTEND_URL}/api/auth/google/callback`,
+          redirect_uri: env.GOOGLE_CALLBACK_URL || `${env.BACKEND_URL}/api/auth/google/callback`,
           grant_type: 'authorization_code',
         }),
       });
