@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { exercisesApi, type GenerateExerciseParams, type ExerciseQuestion } from '@/lib/api';
+import { exercisesApi, type GenerateExerciseParams } from '@/lib/api';
 
 // =============================================================================
 // QUERY KEYS

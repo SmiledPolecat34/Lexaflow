@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { setTokens } from '@/lib/api';
 import { useAuthStore } from '@/hooks/useAuth';
@@ -11,6 +11,33 @@ export default function AuthCallbackPage() {
     const searchParams = useSearchParams();
     const { setUser } = useAuthStore();
     const [error, setError] = useState<string | null>(null);
+
+    const fetchUserAndRedirect = useCallback(
+        async (accessToken: string) => {
+            try {
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/me`,
+                    {
+                        headers: { Authorization: `Bearer ${accessToken}` },
+                    }
+                );
+
+                if (response.ok) {
+                    const user = await response.json();
+                    setUser(user);
+                    router.push('/dashboard');
+                } else {
+                    setError('Erreur lors de la récupération du profil');
+                    setTimeout(() => router.push('/login'), 3000);
+                }
+            } catch {
+                setError('Erreur de connexion');
+                setTimeout(() => router.push('/login'), 3000);
+            }
+        },
+        [router, setUser]
+    );
+
 
     useEffect(() => {
         const accessToken = searchParams.get('accessToken');
@@ -24,36 +51,13 @@ export default function AuthCallbackPage() {
         }
 
         if (accessToken && refreshToken) {
-            // Store tokens
             setTokens(accessToken, refreshToken);
-
-            // Fetch user info
-            fetchUserAndRedirect(accessToken);
+            void fetchUserAndRedirect(accessToken);
         } else {
             setError('Tokens manquants');
             setTimeout(() => router.push('/login'), 3000);
         }
-    }, [searchParams, router, setUser]);
-
-    const fetchUserAndRedirect = async (accessToken: string) => {
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/users/me`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-
-            if (response.ok) {
-                const user = await response.json();
-                setUser(user);
-                router.push('/dashboard');
-            } else {
-                setError('Erreur lors de la récupération du profil');
-                setTimeout(() => router.push('/login'), 3000);
-            }
-        } catch {
-            setError('Erreur de connexion');
-            setTimeout(() => router.push('/login'), 3000);
-        }
-    };
+    }, [searchParams, router, fetchUserAndRedirect]);
 
     const getErrorMessage = (error: string): string => {
         const messages: Record<string, string> = {

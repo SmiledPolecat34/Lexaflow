@@ -16,7 +16,10 @@ export default function ContactPage() {
         <main id="main-content" className="contact-page">
             <div className="container">
                 <Link href="/" className="back-link"><ArrowLeft size={20} />Retour</Link>
-                <div className="page-header"><h1>Contactez-nous</h1><p>Une question ? Nous sommes là pour vous aider</p></div>
+                <div className="page-header">
+                    <h1>Contactez-nous</h1>
+                    <p>{`Une question ? Nous sommes là pour vous aider`}</p>
+                </div>
 
                 <div className="contact-grid">
                     <div className="contact-info">
@@ -24,7 +27,7 @@ export default function ContactPage() {
                         <div className="info-item"><div className="info-icon"><Mail size={20} /></div><div><h4>Email</h4><a href="mailto:versayo03@gmail.com">versayo03@gmail.com</a></div></div>
                         <div className="info-item"><div className="info-icon"><Clock size={20} /></div><div><h4>Temps de réponse</h4><p>Sous 24-48h</p></div></div>
                         <div className="info-item"><div className="info-icon"><MapPin size={20} /></div><div><h4>Localisation</h4><p>France</p></div></div>
-                        <div className="faq-link"><p>Consultez d'abord notre <Link href="/help">centre d'aide</Link></p></div>
+                        <div className="faq-link"><p>{`Consultez d'abord notre `}<Link href="/help">centre d'aide</Link></p></div>
                     </div>
 
                     <form className="contact-form" onSubmit={handleSubmit}>
