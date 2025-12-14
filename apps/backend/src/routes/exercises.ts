@@ -18,7 +18,7 @@ export const exerciseRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
       tags: ['exercises'],
       summary: 'Get available exercise types',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const types = [
       {
         id: 'INFINITIVE_VERBS',
@@ -87,7 +87,7 @@ export const exerciseRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
       tags: ['exercises'],
       summary: 'Get CEFR levels',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const levels = [
       { id: 'A1', name: 'Débutant', description: 'Niveau découverte' },
       { id: 'A2', name: 'Élémentaire', description: 'Niveau de survie' },
@@ -108,7 +108,7 @@ export const exerciseRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
       tags: ['exercises'],
       summary: 'Get available themes',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const themes = [
       { id: 'general', name: 'Général', icon: '🌍' },
       { id: 'business', name: 'Business', icon: '💼' },
@@ -424,7 +424,7 @@ async function recordActivity(userId: string): Promise<void> {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  let streak = await prisma.streak.findUnique({
+  const streak = await prisma.streak.findUnique({
     where: { userId },
   });
 

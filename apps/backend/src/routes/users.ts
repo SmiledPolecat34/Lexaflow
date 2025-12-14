@@ -1,9 +1,8 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../config/database.js';
 import { authenticate } from '../middleware/auth.js';
-import { updateUserSchema, type UpdateUserInput } from '../schemas/index.js';
-import { hashPassword } from '../utils/security.js';
-import JSZip from 'jszip';
+import { updateUserSchema } from '../schemas/index.js';
+
 
 export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   // ==========================================================================
@@ -122,13 +121,6 @@ export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   }, async (request, reply) => {
     const userId = request.userId!;
 
-    // Get exercise statistics
-    const exerciseStats = await prisma.exerciseResult.groupBy({
-      by: ['exerciseId'],
-      where: { userId },
-      _avg: { percentage: true },
-      _count: true,
-    });
 
     // Get results by type
     const resultsByType = await prisma.exerciseResult.findMany({
@@ -180,20 +172,12 @@ export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       where: { userId },
     });
 
-    // Common errors (from AI evaluations)
-    const recentResults = await prisma.exerciseResult.findMany({
-      where: { userId },
-      orderBy: { completedAt: 'desc' },
-      take: 50,
-      select: { aiEvaluation: true },
-    });
-
     return reply.send({
       summary: {
         totalExercises: resultsByType.length,
         averageScore:
           resultsByType.reduce((sum, r) => sum + r.percentage, 0) /
-            resultsByType.length || 0,
+          resultsByType.length || 0,
         coursesInProgress: courseProgress.filter((c) => !c.completedAt).length,
         coursesCompleted: courseProgress.filter((c) => c.completedAt).length,
         badgesEarned: badges.length,
@@ -306,7 +290,8 @@ export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     }
 
     // Remove sensitive data
-    const { passwordHash, twoFactorSecret, ...safeUser } = user;
+    const { passwordHash: _passwordHash, twoFactorSecret: _twoFactorSecret, ...safeUser } = user;
+    void _passwordHash; void _twoFactorSecret; // Used for exclusion from response
 
     // Create export data
     const exportData = {

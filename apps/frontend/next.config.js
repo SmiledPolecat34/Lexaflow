@@ -1,3 +1,4 @@
+const path = require('path');
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
@@ -10,15 +11,6 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
 
-  // ⛔️ IMPORTANT POUR NETLIFY
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
-  typescript: {
-    ignoreBuildErrors: false, // on garde TS strict
-  },
-
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   },
@@ -27,17 +19,9 @@ const nextConfig = {
     domains: ['localhost', 'lexaflow.com'],
   },
 
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-        ],
-      },
-    ];
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname);
+    return config;
   },
 };
 

@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk';
 import { env } from '../config/env.js';
-import { generatePromptHash, signRequest } from '../utils/security.js';
+import { generatePromptHash } from '../utils/security.js';
 import { cacheAIResponse, getAICachedResponse, checkAIRateLimit } from '../config/redis.js';
 import type { Level, ExerciseType, ResponseStyle } from '@prisma/client';
 

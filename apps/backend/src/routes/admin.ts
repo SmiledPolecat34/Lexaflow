@@ -3,7 +3,6 @@ import { prisma } from '../config/database.js';
 import { requireAdmin, requireModerator } from '../middleware/auth.js';
 import {
   paginationSchema,
-  updateUserRoleSchema,
   createExerciseSchema,
   updatePromptSchema,
 } from '../schemas/index.js';
@@ -106,7 +105,8 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       return reply.status(404).send({ error: true, message: 'User not found' });
     }
 
-    const { passwordHash, twoFactorSecret, ...safeUser } = user;
+    const { passwordHash: _ph, twoFactorSecret: _ts, ...safeUser } = user;
+    void _ph; void _ts; // Used for exclusion from response
     return reply.send(safeUser);
   });
 
@@ -285,7 +285,7 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       summary: 'List all courses (including unpublished)',
       security: [{ bearerAuth: [] }],
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const courses = await prisma.course.findMany({
       include: {
         _count: { select: { lessons: true, progress: true } },
@@ -357,7 +357,7 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       summary: 'List AI prompts',
       security: [{ bearerAuth: [] }],
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const prompts = await prisma.aIPrompt.findMany({
       orderBy: { name: 'asc' },
     });
@@ -454,7 +454,7 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       summary: 'List all badges',
       security: [{ bearerAuth: [] }],
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const badges = await prisma.badge.findMany({
       include: {
         _count: { select: { users: true } },
@@ -504,7 +504,7 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       summary: 'Get platform statistics',
       security: [{ bearerAuth: [] }],
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const [
       totalUsers,
       activeUsers,
@@ -539,8 +539,8 @@ export const adminRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       _count: true,
     });
 
-    // Exercise completion by type
-    const exercisesByType = await prisma.exerciseResult.groupBy({
+    // Exercise completion by type - reserved for future use
+    void prisma.exerciseResult.groupBy({
       by: ['exerciseId'],
       _count: true,
       _avg: { percentage: true },

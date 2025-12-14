@@ -21,8 +21,6 @@ import {
   resetPasswordSchema,
   verify2FASchema,
   recoveryCodeSchema,
-  type RegisterInput,
-  type LoginInput,
 } from '../schemas/index.js';
 import { authenticate } from '../middleware/auth.js';
 import { storeRefreshToken, invalidateRefreshToken, isRefreshTokenValid } from '../config/redis.js';
@@ -264,7 +262,8 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       },
     });
 
-    const { passwordHash, twoFactorSecret, ...userData } = user;
+    const { passwordHash: _ph, twoFactorSecret: _ts, ...userData } = user;
+    void _ph; void _ts; // Used for exclusion from response
 
     return reply.send({
       user: userData,

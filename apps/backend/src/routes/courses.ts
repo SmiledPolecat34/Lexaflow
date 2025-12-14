@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../config/database.js';
 import { authenticate, requireConsent } from '../middleware/auth.js';
-import { paginationSchema, updateProgressSchema } from '../schemas/index.js';
+import { updateProgressSchema } from '../schemas/index.js';
 import { generateCourseContent, generatePlacementTest, calculatePlacementLevel } from '../services/ai.js';
 import { checkAIRateLimit } from '../config/redis.js';
 
@@ -54,7 +54,7 @@ export const courseRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['courses'],
       summary: 'Get grammar courses',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const courses = await prisma.course.findMany({
       where: { type: 'GRAMMAR', isPublished: true },
       orderBy: { order: 'asc' },
@@ -67,7 +67,7 @@ export const courseRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['courses'],
       summary: 'Get conjugation courses',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const courses = await prisma.course.findMany({
       where: { type: 'CONJUGATION', isPublished: true },
       orderBy: { order: 'asc' },
@@ -80,7 +80,7 @@ export const courseRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['courses'],
       summary: 'Get vocabulary courses',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const courses = await prisma.course.findMany({
       where: { type: 'VOCABULARY', isPublished: true },
       orderBy: { order: 'asc' },
@@ -187,7 +187,7 @@ export const courseRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       },
     });
 
-    let completedLessons = (progress?.completedLessons || []) as string[];
+    let completedLessons = (progress?.completedLessons || []);
 
     if (completed && !completedLessons.includes(lessonId)) {
       completedLessons.push(lessonId);
@@ -361,7 +361,7 @@ export const courseRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       summary: 'Get placement test questions',
       security: [{ bearerAuth: [] }],
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const result = await generatePlacementTest();
 
     if (result.error) {

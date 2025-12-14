@@ -1,5 +1,5 @@
 import { Redis } from '@upstash/redis';
-import { env, isDev } from './env.js';
+import { env } from './env.js';
 
 let redis: Redis | null = null;
 
@@ -126,7 +126,6 @@ export async function checkAIRateLimit(userId: string): Promise<{
   if (!r) return { allowed: true, remaining: env.AI_RATE_LIMIT_PER_MINUTE, resetIn: 0 };
 
   const key = `ai_rate_limit:${userId}`;
-  const windowMs = 60000; // 1 minute
 
   try {
     const current = await r.incr(key);

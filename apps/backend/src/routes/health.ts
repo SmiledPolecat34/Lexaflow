@@ -8,7 +8,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['health'],
       summary: 'Health check',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     const checks = {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -51,7 +51,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['health'],
       summary: 'Readiness check',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     try {
       await prisma.$queryRaw`SELECT 1`;
       return reply.send({ ready: true });
@@ -65,7 +65,7 @@ export const healthRoutes: FastifyPluginAsync = async (app: FastifyInstance) => 
       tags: ['health'],
       summary: 'Liveness check',
     },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     return reply.send({ live: true });
   });
 };
