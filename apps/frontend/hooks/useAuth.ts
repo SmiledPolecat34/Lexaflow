@@ -52,7 +52,7 @@ export function useAuth() {
     const initAuth = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
-        const { data, error } = await authApi.getMe();
+        const { data } = await authApi.getMe();
         if (data) {
           setUser(data);
         } else {
