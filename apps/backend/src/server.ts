@@ -6,7 +6,7 @@ import jwt from '@fastify/jwt';
 import cookie from '@fastify/cookie';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
-import { Sentry } from './instrument';
+import { Sentry } from './instrument.js';
 
 import { env, isDev } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
