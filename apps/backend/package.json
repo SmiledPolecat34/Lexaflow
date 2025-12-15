@@ -28,7 +28,6 @@
         "@fastify/swagger": "^8.12.1",
         "@fastify/swagger-ui": "^2.0.1",
         "@prisma/client": "^5.22.0",
-        "prisma": "^5.22.0",
         "@sentry/node": "^7.120.4",
         "@upstash/redis": "^1.25.1",
         "bcrypt": "^5.1.1",
@@ -41,12 +40,13 @@
         "otplib": "^12.0.1",
         "pino": "^8.17.1",
         "pino-pretty": "^10.3.0",
+        "prisma": "^5.22.0",
         "qrcode": "^1.5.3",
         "zod": "^3.22.4"
     },
     "devDependencies": {
         "@types/bcrypt": "^5.0.2",
-        "@types/node": "^20.10.0",
+        "@types/node": "^20.19.26",
         "@types/nodemailer": "^6.4.14",
         "@types/qrcode": "^1.5.5",
         "@typescript-eslint/eslint-plugin": "^6.13.2",
