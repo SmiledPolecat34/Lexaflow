@@ -7,7 +7,6 @@
     "dev": "pnpm --parallel -r dev",
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
-    "build": "pnpm --parallel -r build",
     "test": "pnpm --parallel -r test",
     "test:unit": "pnpm --parallel -r test:unit",
     "test:api": "pnpm --filter backend test:api",
