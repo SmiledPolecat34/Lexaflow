@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Providers } from '@/components/providers';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import GDPRConsentProvider from '@/components/GDPRConsentProvider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -89,8 +91,11 @@ export default function RootLayout({
           Aller au contenu principal
         </a>
         <Providers>
-          <Header />
-          {children}
+          <GDPRConsentProvider>
+            <Header />
+            {children}
+            <Footer />
+          </GDPRConsentProvider>
         </Providers>
       </body>
     </html>

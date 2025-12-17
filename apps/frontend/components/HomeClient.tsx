@@ -148,40 +148,6 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="footer">
-                <div className="container">
-                    <div className="footer-content">
-                        <div className="footer-brand">
-                            <span className="nav-brand">🎓 LexaFlow</span>
-                            <p>Apprenez l'anglais efficacement avec l'IA</p>
-                        </div>
-                        <div className="footer-links">
-                            <div className="footer-column">
-                                <h4>Produit</h4>
-                                <Link href="/exercises">Exercices</Link>
-                                <Link href="/courses">Cours</Link>
-                                <Link href="/progress">Progression</Link>
-                            </div>
-                            <div className="footer-column">
-                                <h4>Légal</h4>
-                                <Link href="/privacy">Confidentialité</Link>
-                                <Link href="/terms">Conditions</Link>
-                                <Link href="/gdpr">RGPD</Link>
-                            </div>
-                            <div className="footer-column">
-                                <h4>Support</h4>
-                                <Link href="/help">Aide</Link>
-                                <Link href="/contact">Contact</Link>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="footer-bottom">
-                        <p>© {new Date().getFullYear()} LexaFlow. Tous droits réservés.</p>
-                    </div>
-                </div>
-            </footer>
-
             <style jsx>{`
         .hero {
           padding: 6rem 0;

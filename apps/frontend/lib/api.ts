@@ -302,6 +302,12 @@ export const coursesApi = {
       method: 'POST',
       body: { answers, questions },
     }),
+
+  generateContent: (params: { topic: string; level: string; type: string }) =>
+    api('/api/courses/generate', {
+      method: 'POST',
+      body: params,
+    }),
 };
 
 // =============================================================================
@@ -347,8 +353,17 @@ export const userApi = {
 
   exportData: () => api('/api/users/export'),
 
-  deleteAccount: (password: string) =>
-    api('/api/users/me', { method: 'DELETE', body: { password, confirmation: 'DELETE MY ACCOUNT' } }),
+  deleteAccount: (password: string, confirmation: string) =>
+    api('/api/users/me', { method: 'DELETE', body: { password, confirmation } }),
+
+  // GDPR Consent
+  giveConsent: (consent: boolean) =>
+    api('/api/users/consent', { method: 'POST', body: { consent } }),
+
+  // 2FA Management  
+  enable2FA: () => api<{ qrCode: string; secret: string }>('/api/auth/2fa/setup', { method: 'POST' }),
+  verify2FA: (totpCode: string) => api('/api/auth/2fa/verify', { method: 'POST', body: { totpCode } }),
+  disable2FA: (totpCode: string) => api('/api/auth/2fa/disable', { method: 'POST', body: { totpCode } }),
 };
 
 // =============================================================================

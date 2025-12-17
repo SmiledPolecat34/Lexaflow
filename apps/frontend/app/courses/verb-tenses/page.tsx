@@ -49,12 +49,18 @@ export default function VerbTensesPage() {
                         <h2>Contenu du cours</h2>
                         <p className="lessons-count">{lessons.length} leçons • 6h de contenu</p>
                         <div className="lessons-list">
-                            {lessons.map((lesson, i) => (
-                                <div key={lesson.id} className={`lesson-item ${lesson.locked ? 'locked' : ''}`}>
+                            {lessons.map((lesson, i) => lesson.locked ? (
+                                <div key={lesson.id} className="lesson-item locked">
                                     <div className="lesson-number">{i + 1}</div>
                                     <div className="lesson-info"><h3>{lesson.title}</h3><span className="lesson-duration"><Clock size={14} />{lesson.duration}</span></div>
-                                    <div className="lesson-action">{lesson.locked ? <Lock size={18} /> : <PlayCircle size={24} />}</div>
+                                    <div className="lesson-action"><Lock size={18} /></div>
                                 </div>
+                            ) : (
+                                <Link key={lesson.id} href={`/courses/verb-tenses/lesson/${lesson.id}`} className="lesson-item">
+                                    <div className="lesson-number">{i + 1}</div>
+                                    <div className="lesson-info"><h3>{lesson.title}</h3><span className="lesson-duration"><Clock size={14} />{lesson.duration}</span></div>
+                                    <div className="lesson-action"><PlayCircle size={24} /></div>
+                                </Link>
                             ))}
                         </div>
                     </div>

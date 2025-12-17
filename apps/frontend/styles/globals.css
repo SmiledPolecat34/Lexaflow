@@ -3,6 +3,8 @@
    Modern, accessible CSS following WCAG 2.2 guidelines
    ============================================================================= */
 
+@import './components.css';
+
 /* CSS Custom Properties / Design Tokens */
 :root {
   /* Colors - Primary */

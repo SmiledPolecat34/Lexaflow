@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, PenTool, Headphones, MessageSquare, Zap, Lock, Star } from 'lucide-react';
 
@@ -12,6 +13,7 @@ const exerciseCategories = [
         exercises: 120,
         color: '#3b82f6',
         locked: false,
+        levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
     },
     {
         id: 'vocabulary',
@@ -21,6 +23,7 @@ const exerciseCategories = [
         exercises: 200,
         color: '#22c55e',
         locked: false,
+        levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
     },
     {
         id: 'listening',
@@ -30,6 +33,7 @@ const exerciseCategories = [
         exercises: 80,
         color: '#f59e0b',
         locked: false,
+        levels: ['A2', 'B1', 'B2', 'C1', 'C2'],
     },
     {
         id: 'conversation',
@@ -39,6 +43,7 @@ const exerciseCategories = [
         exercises: 50,
         color: '#8b5cf6',
         locked: true,
+        levels: ['B1', 'B2', 'C1', 'C2'],
     },
     {
         id: 'speed',
@@ -48,12 +53,20 @@ const exerciseCategories = [
         exercises: 100,
         color: '#ef4444',
         locked: false,
+        levels: ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'],
     },
 ];
 
 const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export default function ExercisesPage() {
+    const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+
+    // Filter categories based on selected level
+    const filteredCategories = selectedLevel
+        ? exerciseCategories.filter(cat => cat.levels.includes(selectedLevel))
+        : exerciseCategories;
+
     return (
         <main id="main-content" className="exercises-page">
             <div className="container">
@@ -70,8 +83,18 @@ export default function ExercisesPage() {
                 <div className="level-filter">
                     <span className="filter-label">Filtrer par niveau :</span>
                     <div className="level-buttons">
+                        <button
+                            className={`level-btn ${selectedLevel === null ? 'active' : ''}`}
+                            onClick={() => setSelectedLevel(null)}
+                        >
+                            Tous
+                        </button>
                         {levels.map((level) => (
-                            <button key={level} className="level-btn">
+                            <button
+                                key={level}
+                                className={`level-btn ${selectedLevel === level ? 'active' : ''}`}
+                                onClick={() => setSelectedLevel(level)}
+                            >
                                 {level}
                             </button>
                         ))}
@@ -79,7 +102,7 @@ export default function ExercisesPage() {
                 </div>
 
                 <div className="categories-grid">
-                    {exerciseCategories.map((category) => (
+                    {filteredCategories.map((category) => (
                         <div
                             key={category.id}
                             className={`category-card ${category.locked ? 'locked' : ''}`}
@@ -196,6 +219,12 @@ export default function ExercisesPage() {
         .level-btn:hover {
           border-color: var(--primary-600);
           color: var(--primary-600);
+        }
+
+        .level-btn.active {
+          border-color: var(--primary-600);
+          background: var(--primary-600);
+          color: white;
         }
 
         .categories-grid {

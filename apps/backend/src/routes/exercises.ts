@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { prisma } from '../config/database.js';
-import { authenticate, requireConsent } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 import {
   generateExerciseSchema,
   submitAnswerSchema,
@@ -131,7 +131,7 @@ export const exerciseRoutes: FastifyPluginAsync = async (app: FastifyInstance) =
   // GENERATE EXERCISE
   // ==========================================================================
   app.post('/generate', {
-    preHandler: [authenticate, requireConsent],
+    preHandler: [authenticate],
     schema: {
       tags: ['exercises'],
       summary: 'Generate a new AI exercise',
