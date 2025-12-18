@@ -143,8 +143,29 @@ export function useAuth() {
 
 export function useRequireAuth(redirectTo = '/login') {
   const router = useRouter();
-  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isLoading, setUser, setLoading } = useAuthStore();
 
+  // Initialize auth state (same as useAuth)
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const { data } = await authApi.getMe();
+        if (data) {
+          setUser(data);
+        } else {
+          clearTokens();
+        }
+      }
+      setLoading(false);
+    };
+
+    if (isLoading) {
+      initAuth();
+    }
+  }, [setUser, setLoading, isLoading]);
+
+  // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push(redirectTo);

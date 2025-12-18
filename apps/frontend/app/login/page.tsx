@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import TwoFactorLoginModal from '@/components/TwoFactorLoginModal';
 
 interface LoginForm {
   email: string;
@@ -15,6 +16,7 @@ interface LoginForm {
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [requires2FA, setRequires2FA] = useState(false);
+  const [loginData, setLoginData] = useState<LoginForm | null>(null);
   const { login, isLoading, error } = useAuth();
 
   const {
@@ -24,9 +26,23 @@ export default function LoginPage() {
   } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
+    setLoginData(data);
     const result = await login(data);
     if (result?.requires2FA) {
       setRequires2FA(true);
+    }
+  };
+
+  const handle2FAVerify = async (code: string) => {
+    if (!loginData) return;
+    
+    const result = await login({
+      ...loginData,
+      totpCode: code,
+    });
+    
+    if (!result?.requires2FA && !result?.error) {
+      setRequires2FA(false);
     }
   };
 
@@ -105,31 +121,7 @@ export default function LoginPage() {
               )}
             </div>
 
-            {requires2FA && (
-              <div className="form-group animate-slideUp">
-                <label htmlFor="totpCode" className="form-label">
-                  Code 2FA
-                </label>
-                <input
-                  id="totpCode"
-                  type="text"
-                  className="form-input"
-                  placeholder="000000"
-                  maxLength={6}
-                  autoComplete="one-time-code"
-                  {...register('totpCode', {
-                    required: 'Code 2FA requis',
-                    pattern: {
-                      value: /^\d{6}$/,
-                      message: 'Le code doit contenir 6 chiffres',
-                    },
-                  })}
-                />
-                {errors.totpCode && (
-                  <p className="form-error">{errors.totpCode.message}</p>
-                )}
-              </div>
-            )}
+
 
             <div className="form-actions">
               <Link href="/forgot-password" className="forgot-link">
@@ -332,6 +324,14 @@ export default function LoginPage() {
           border: 1px solid var(--error-200);
         }
       `}</style>
+
+      {/* 2FA Modal */}
+      <TwoFactorLoginModal
+        isOpen={requires2FA}
+        onClose={() => setRequires2FA(false)}
+        onVerify={handle2FAVerify}
+        error={error}
+      />
     </main>
   );
 }

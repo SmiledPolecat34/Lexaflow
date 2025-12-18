@@ -5,8 +5,10 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle, XCircle, Loader2, Trophy } from 'lucide-react';
 import { exercisesApi, type Exercise, type ExerciseResult } from '@/lib/api';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 export default function ExerciseGenerationPage() {
+    const { user, isLoading: authLoading } = useRequireAuth();
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -22,6 +24,26 @@ export default function ExerciseGenerationPage() {
     const [result, setResult] = useState<ExerciseResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [startTime] = useState(Date.now());
+
+    // Don't load exercise if still checking auth
+    if (authLoading) {
+        return (
+            <main className="exercise-page">
+                <div className="container">
+                    <div className="loading-state">
+                        <Loader2 size={48} className="spinner" />
+                        <p>Chargement...</p>
+                    </div>
+                </div>
+                <style jsx>{`
+                    .exercise-page { min-height: 100vh; padding: 3rem 0; background: linear-gradient(135deg, #dcfce7 0%, var(--background) 50%); }
+                    .loading-state { text-align: center; padding: 4rem; }
+                    .spinner { animation: spin 1s linear infinite; color: #22c55e; margin: 0 auto 1rem; }
+                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                `}</style>
+            </main>
+        );
+    }
 
     useEffect(() => {
         async function generateExercise() {

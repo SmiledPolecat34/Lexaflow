@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Linkedin, Mail, MapPin, Phone } from 'lucide-react';
+import { useAuthStore } from '@/hooks/useAuth';
 
 const footerLinks = {
   product: [
@@ -30,6 +31,7 @@ const socialLinks = [
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { isAuthenticated } = useAuthStore();
 
   return (
     <footer className="footer">
@@ -39,7 +41,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="footer-brand">
             <Link href="/" className="footer-logo">
-              🎓 LexaFlow
+              <img src="/logoLexaFlox.png" alt="LexaFlow" className="footer-logo-img" />
             </Link>
             <p className="footer-tagline">
               Maîtrisez l'anglais avec des exercices interactifs et des leçons générées par l'IA
@@ -60,17 +62,19 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Product Links */}
-          <div className="footer-section">
-            <h3>Produit</h3>
-            <ul>
-              {footerLinks.product.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href}>{link.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Product Links - Only show when authenticated */}
+          {isAuthenticated && (
+            <div className="footer-section">
+              <h3>Produit</h3>
+              <ul>
+                {footerLinks.product.map((link) => (
+                  <li key={link.href}>
+                    <Link href={link.href}>{link.label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Company Links */}
           <div className="footer-section">
@@ -149,7 +153,7 @@ export default function Footer() {
 
         .footer-grid {
           display: grid;
-          grid-template-columns: 2fr repeat(4, 1fr);
+          grid-template-columns: 2fr repeat(auto-fit, minmax(150px, 1fr));
           gap: 3rem;
           margin-bottom: 3rem;
         }
@@ -159,9 +163,6 @@ export default function Footer() {
         }
 
         .footer-logo {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: var(--foreground);
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
@@ -171,6 +172,12 @@ export default function Footer() {
 
         .footer-logo:hover {
           opacity: 0.8;
+        }
+
+        .footer-logo-img {
+          height: 2rem;
+          width: auto;
+          object-fit: contain;
         }
 
         .footer-tagline {

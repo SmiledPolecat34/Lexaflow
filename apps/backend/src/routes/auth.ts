@@ -362,36 +362,49 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       summary: 'Logout and invalidate tokens',
     },
   }, async (request, reply) => {
-    const { refreshToken } = request.body as { refreshToken?: string };
+    try {
+      const { refreshToken } = (request.body as { refreshToken?: string } | undefined) || {};
 
-    if (refreshToken) {
-      // Revoke specific token
-      await prisma.refreshToken.updateMany({
-        where: { token: refreshToken, userId: request.userId },
-        data: { revokedAt: new Date() },
-      });
-      await invalidateRefreshToken(request.userId!, refreshToken);
-    } else {
-      // Revoke all tokens for user
-      await prisma.refreshToken.updateMany({
-        where: { userId: request.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
+      if (refreshToken) {
+        // Revoke specific token
+        await prisma.refreshToken.updateMany({
+          where: { token: refreshToken, userId: request.userId },
+          data: { revokedAt: new Date() },
+        });
+        await invalidateRefreshToken(request.userId!, refreshToken);
+      } else {
+        // Revoke all tokens for user
+        await prisma.refreshToken.updateMany({
+          where: { userId: request.userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+
+      // Log activity
+      try {
+        await prisma.activityLog.create({
+          data: {
+            userId: request.userId,
+            action: 'LOGOUT',
+            resource: 'user',
+            resourceId: request.userId,
+            ipAddress: request.ip,
+            userAgent: request.headers['user-agent'],
+          },
+        });
+      } catch (logError) {
+        // Log error but don't fail the logout
+        console.error('Failed to log logout activity:', logError);
+      }
+
+      return reply.send({ message: 'Logged out successfully' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      return reply.status(500).send({
+        error: true,
+        message: 'Failed to logout',
       });
     }
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        userId: request.userId,
-        action: 'LOGOUT',
-        resource: 'user',
-        resourceId: request.userId,
-        ipAddress: request.ip,
-        userAgent: request.headers['user-agent'],
-      },
-    });
-
-    return reply.send({ message: 'Logged out successfully' });
   });
 
   // ==========================================================================
@@ -863,18 +876,13 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
   }, async (request, reply) => {
     const { invitationCode } = request.query as { invitationCode?: string };
 
-    // Validate invitation code before redirecting to Google
-    if (!invitationCode || invitationCode !== env.INVITATION_CODE) {
-      return reply.redirect(`${env.FRONTEND_URL}/register?error=invalid_invitation_code`);
-    }
-
     const clientId = env.GOOGLE_CLIENT_ID;
     const redirectUri = env.GOOGLE_CALLBACK_URL || `${env.BACKEND_URL}/api/auth/google/callback`;
 
     const scope = encodeURIComponent('email profile');
     const state = generateToken().substring(0, 32);
 
-    // Store state and invitation code in cookies for CSRF protection and validation
+    // Store state in cookie for CSRF protection
     reply.setCookie('oauth_state', state, {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
@@ -883,13 +891,16 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       path: '/',
     });
 
-    reply.setCookie('oauth_invitation', invitationCode, {
-      httpOnly: true,
-      secure: env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 600, // 10 minutes
-      path: '/',
-    });
+    // Store invitation code in cookie if provided (for new signups)
+    if (invitationCode) {
+      reply.setCookie('oauth_invitation', invitationCode, {
+        httpOnly: true,
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 600, // 10 minutes
+        path: '/',
+      });
+    }
 
     const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
       `client_id=${clientId}` +
@@ -923,11 +934,6 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     // Verify state for CSRF protection
     if (!state || state !== storedState) {
       return reply.redirect(`${env.FRONTEND_URL}/register?error=invalid_state`);
-    }
-
-    // Verify invitation code
-    if (!storedInvitationCode || storedInvitationCode !== env.INVITATION_CODE) {
-      return reply.redirect(`${env.FRONTEND_URL}/register?error=invalid_invitation_code`);
     }
 
     if (!code) {
@@ -986,6 +992,11 @@ export const authRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
       });
 
       if (!user) {
+        // Creating new user - require invitation code
+        if (!storedInvitationCode || storedInvitationCode !== env.INVITATION_CODE) {
+          return reply.redirect(`${env.FRONTEND_URL}/register?error=invalid_invitation_code`);
+        }
+
         // Create new user
         user = await prisma.user.create({
           data: {

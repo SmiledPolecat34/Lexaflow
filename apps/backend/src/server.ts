@@ -11,6 +11,13 @@ import { Sentry } from './instrument.js';
 import { env, isDev } from './config/env.js';
 import { connectDatabase, disconnectDatabase } from './config/database.js';
 
+// DEVELOPMENT ONLY: Bypass SSL certificate validation
+// This is needed if you're behind a corporate proxy with self-signed certificates
+if (isDev) {
+  console.warn('⚠️ SSL Certificate validation disabled (development mode)');
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
+
 // Import routes
 import { authRoutes } from './routes/auth.js';
 import { userRoutes } from './routes/users.js';

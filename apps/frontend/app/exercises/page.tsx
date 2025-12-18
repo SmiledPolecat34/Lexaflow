@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BookOpen, PenTool, Headphones, MessageSquare, Zap, Lock, Star } from 'lucide-react';
+import { useRequireAuth, useAuthStore } from '@/hooks/useAuth';
 
 const exerciseCategories = [
     {
@@ -60,7 +61,39 @@ const exerciseCategories = [
 const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export default function ExercisesPage() {
+    const { isLoading } = useRequireAuth();
+    const { isAuthenticated } = useAuthStore();
     const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+
+    if (isLoading) {
+        return (
+            <div className="loading-screen">
+                <div className="spinner" />
+                <p>Chargement...</p>
+                <style jsx>{`
+                    .loading-screen {
+                        min-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 1rem;
+                    }
+                    .spinner {
+                        width: 2rem;
+                        height: 2rem;
+                        border: 3px solid var(--muted);
+                        border-top-color: var(--primary-600);
+                        border-radius: 50%;
+                        animation: spin 0.6s linear infinite;
+                    }
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
 
     // Filter categories based on selected level
     const filteredCategories = selectedLevel
@@ -135,15 +168,17 @@ export default function ExercisesPage() {
                     ))}
                 </div>
 
-                <div className="cta-section">
-                    <div className="cta-card">
-                        <h2>Pas encore inscrit ?</h2>
-                        <p>Créez un compte gratuit pour sauvegarder votre progression et accéder à tous les exercices.</p>
-                        <Link href="/register" className="btn btn-primary">
-                            Créer un compte gratuit
-                        </Link>
+                {!isAuthenticated && (
+                    <div className="cta-section">
+                        <div className="cta-card">
+                            <h2>Pas encore inscrit ?</h2>
+                            <p>Créez un compte gratuit pour sauvegarder votre progression et accéder à tous les exercices.</p>
+                            <Link href="/register" className="btn btn-primary">
+                                Créer un compte gratuit
+                            </Link>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <style jsx>{`

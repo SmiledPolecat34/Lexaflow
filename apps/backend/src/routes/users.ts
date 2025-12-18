@@ -321,12 +321,12 @@ export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
 
     // Return as JSON (could also create ZIP)
     return reply
-      .header('Content-Type', 'application/json')
+      .header('Content-Type', 'application/json; charset=utf-8')
       .header(
         'Content-Disposition',
         `attachment; filename="lexaflow-export-${userId}.json"`
       )
-      .send(exportData);
+      .send(JSON.stringify(exportData, null, 2));
   });
 
   // ==========================================================================
@@ -379,6 +379,7 @@ export const userRoutes: FastifyPluginAsync = async (app: FastifyInstance) => {
     // Log before deletion
     await prisma.activityLog.create({
       data: {
+        userId: request.userId,
         action: 'ACCOUNT_DELETED',
         resource: 'user',
         resourceId: request.userId,

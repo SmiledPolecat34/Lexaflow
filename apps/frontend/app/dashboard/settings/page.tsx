@@ -1,19 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { User, Shield, Bell, Trash2, Download, Save } from 'lucide-react';
 import { authApi, userApi } from '@/lib/api';
+import TwoFactorModal from '@/components/TwoFactorModal';
+import Toast, { ToastType } from '@/components/Toast';
 
 export default function DashboardSettingsPage() {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [saving, setSaving] = useState(false);
     const [preferences, setPreferences] = useState({
         level: 'A2',
-        preferredStyle: 'neutral',
+        preferredStyle: 'ADAPTIVE',
         useFormal: false,
     });
+    
+    // 2FA Modal state
+    const [show2FAModal, setShow2FAModal] = useState(false);
+    const [qrData, setQrData] = useState<{ qrCode: string; secret: string } | null>(null);
+    
+    // Toast state
+    const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
     const { data: user } = useQuery({
         queryKey: ['user-profile'],
@@ -26,11 +36,20 @@ export default function DashboardSettingsPage() {
     const handleSavePreferences = async () => {
         try {
             setSaving(true);
-            await userApi.updatePreferences(preferences);
-            alert('Préférences enregistrées');
+            const response = await userApi.updatePreferences(preferences);
+            if (response.error) {
+                if (response.error === 'Session expired') {
+                    setToast({ message: 'Votre session a expiré. Redirection...', type: 'error' });
+                    setTimeout(() => router.push('/login'), 2000);
+                    return;
+                }
+                setToast({ message: response.error, type: 'error' });
+                return;
+            }
+            setToast({ message: 'Préférences enregistrées avec succès !', type: 'success' });
         } catch (error) {
             console.error('Failed to save preferences:', error);
-            alert('Erreur lors de l\'enregistrement');
+            setToast({ message: 'Erreur lors de l\'enregistrement', type: 'error' });
         } finally {
             setSaving(false);
         }
@@ -38,24 +57,50 @@ export default function DashboardSettingsPage() {
 
     const handleExportData = async () => {
         try {
-            const response = await userApi.exportData();
-            if (response.data) {
-                // Create a blob and download it
-                const dataStr = JSON.stringify(response.data, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `lexaflow-export-${new Date().toISOString()}.json`;
-                link.click();
-                URL.revokeObjectURL(url);
-                alert('Export des données réussi');
-            } else {
-                throw new Error(response.error || 'Failed to export');
+            // Get the access token
+            const accessToken = localStorage.getItem('accessToken');
+            if (!accessToken) {
+                setToast({ message: 'Vous devez être connecté', type: 'error' });
+                return;
             }
+
+            // Fetch the export directly as a blob
+            const response = await fetch('http://localhost:3001/api/users/export', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Export failed');
+            }
+
+            // Get the blob data
+            const blob = await response.blob();
+            
+            // Extract filename from Content-Disposition header or use default
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `lexaflow-export-${new Date().toISOString()}.json`;
+            if (contentDisposition) {
+                const matches = /filename="([^"]+)"/.exec(contentDisposition);
+                if (matches && matches[1]) {
+                    filename = matches[1];
+                }
+            }
+
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            setToast({ message: 'Données exportées avec succès !', type: 'success' });
         } catch (error) {
             console.error('Failed to export data:', error);
-            alert('Erreur lors de l\'export des données');
+            setToast({ message: 'Erreur lors de l\'export des données', type: 'error' });
         }
     };
 
@@ -69,11 +114,26 @@ export default function DashboardSettingsPage() {
         if (!password) return;
 
         try {
-            await userApi.deleteAccount(password, 'DELETE MY ACCOUNT');
-            router.push('/');
+            const response = await userApi.deleteAccount(password, 'DELETE MY ACCOUNT');
+            if (response.error) {
+                if (response.error === 'Session expired') {
+                    setToast({ message: 'Votre session a expiré. Redirection...', type: 'error' });
+                    setTimeout(() => router.push('/login'), 2000);
+                    return;
+                }
+                setToast({ message: response.error, type: 'error' });
+                return;
+            }
+            
+            // Clear tokens on successful deletion
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            
+            setToast({ message: 'Compte supprimé avec succès. Redirection...', type: 'success' });
+            setTimeout(() => router.push('/'), 2000);
         } catch (error) {
             console.error('Failed to delete account:', error);
-            alert('Erreur lors de la suppression du compte');
+            setToast({ message: 'Erreur lors de la suppression du compte', type: 'error' });
         }
     };
 
@@ -84,58 +144,82 @@ export default function DashboardSettingsPage() {
             if (!totpCode) return;
 
             try {
-                await authApi.disable2FA(totpCode);
-                alert('2FA désactivée');
-                window.location.reload();
+                const response = await authApi.disable2FA(totpCode);
+                if (response.error) {
+                    if (response.error === 'Session expired') {
+                        setToast({ message: 'Session expirée. Redirection...', type: 'error' });
+                        setTimeout(() => router.push('/login'), 2000);
+                        return;
+                    }
+                    setToast({ message: response.error, type: 'error' });
+                    return;
+                }
+                setToast({ message: '2FA désactivée avec succès', type: 'success' });
+                // Refresh user data
+                await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
             } catch (error) {
                 console.error('Failed to disable 2FA:', error);
-                alert('Erreur lors de la désactivation de 2FA');
+                setToast({ message: 'Erreur lors de la désactivation de 2FA', type: 'error' });
             }
         } else {
             // Enable 2FA
             try {
                 const setupResponse = await authApi.setup2FA();
-                if (setupResponse.data) {
-                    // Show QR code
-                    const qrCode = setupResponse.data.qrCode;
-                    const secret = setupResponse.data.secret;
-                    
-                    // Create modal to show QR code
-                    const showQRCode = confirm(
-                        `Pour activer la 2FA, scannez le QR code avec votre application d'authentification (Google Authenticator, Authy, etc.).\n\nSecret manuel : ${secret}\n\nCliquez OK pour continuer et entrer votre code.`
-                    );
-                    
-                    if (showQRCode) {
-                        // For now, open QR code in new window
-                        const qrWindow = window.open('', 'QR Code', 'width=400,height=500');
-                        if (qrWindow) {
-                            qrWindow.document.write(`
-                                <html>
-                                    <head><title>QR Code 2FA</title></head>
-                                    <body style="text-align: center; padding: 20px; font-family: sans-serif;">
-                                        <h2>Scannez ce QR Code</h2>
-                                        <img src="${qrCode}" alt="QR Code" style="max-width:300px" />
-                                        <p>Secret manuel: <code>${secret}</code></p>
-                                        <p>Fermez cette fenêtre et entrez votre code 2FA</p>
-                                    </body>
-                                </html>
-                            `);
-                        }
-                        
-                        const totpCode = prompt('Entrez le code 2FA de votre application :');
-                        if (totpCode) {
-                            const verifyResponse = await authApi.verify2FA(totpCode);
-                            if (verifyResponse.data) {
-                                alert(`2FA activée ! Codes de récupération : ${JSON.stringify(verifyResponse.data)}\n\nSauvegardez ces codes en lieu sûr !`);
-                                window.location.reload();
-                            }
-                        }
+                
+                if (setupResponse.error) {
+                    if (setupResponse.error === 'Session expired') {
+                        setToast({ message: 'Session expirée. Redirection...', type: 'error' });
+                        setTimeout(() => router.push('/login'), 2000);
+                        return;
                     }
+                    setToast({ message: setupResponse.error, type: 'error' });
+                    return;
+                }
+                
+                if (setupResponse.data) {
+                    // Show modal with QR code
+                    setQrData({
+                        qrCode: setupResponse.data.qrCode,
+                        secret: setupResponse.data.secret,
+                    });
+                    setShow2FAModal(true);
                 }
             } catch (error) {
                 console.error('Failed to setup 2FA:', error);
-                alert('Erreur lors de la configuration de 2FA');
+                setToast({ message: 'Erreur lors de la configuration de 2FA', type: 'error' });
             }
+        }
+    };
+
+    const handleVerify2FA = async (totpCode: string) => {
+        try {
+            const verifyResponse = await authApi.verify2FA(totpCode);
+            if (verifyResponse.error) {
+                setToast({ message: verifyResponse.error, type: 'error' });
+                return;
+            }
+            if (verifyResponse.data) {
+                const codes = verifyResponse.data.recoveryCodes || [];
+                setShow2FAModal(false);
+                setToast({ 
+                    message: `2FA activée ! ${codes.length} codes de récupération générés`, 
+                    type: 'success' 
+                });
+                // Download recovery codes
+                const codesText = `Codes de récupération 2FA\n\n${codes.join('\n')}\n\nSauvegardez ces codes en lieu sûr !`;
+                const blob = new Blob([codesText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'lexaflow-recovery-codes.txt';
+                link.click();
+                URL.revokeObjectURL(url);
+                // Refresh user data instead of reloading the page
+                await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+            }
+        } catch (error) {
+            console.error('Failed to verify 2FA:', error);
+            setToast({ message: 'Erreur lors de la vérification', type: 'error' });
         }
     };
 
@@ -194,9 +278,9 @@ export default function DashboardSettingsPage() {
                                 onChange={(e) => setPreferences({ ...preferences, preferredStyle: e.target.value })}
                                 className="input"
                             >
-                                <option value="neutral">Neutre</option>
-                                <option value="casual">Décontracté</option>
-                                <option value="formal">Formel</option>
+                                <option value="SHORT">Court</option>
+                                <option value="DETAILED">Détaillé</option>
+                                <option value="ADAPTIVE">Adaptatif</option>
                             </select>
                         </div>
                         <div className="setting-item checkbox">
@@ -286,6 +370,26 @@ export default function DashboardSettingsPage() {
                 .btn-danger { background: #ef4444; color: white; }
                 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
             `}</style>
+
+            {/* 2FA Modal */}
+            {show2FAModal && qrData && (
+                <TwoFactorModal
+                    isOpen={show2FAModal}
+                    onClose={() => setShow2FAModal(false)}
+                    qrCode={qrData.qrCode}
+                    secret={qrData.secret}
+                    onVerify={handleVerify2FA}
+                />
+            )}
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </main>
     );
 }

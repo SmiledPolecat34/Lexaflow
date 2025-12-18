@@ -4,18 +4,18 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
     ArrowLeft,
-    Target,
     Award,
     Flame,
     BookOpen,
     CheckCircle
 } from 'lucide-react';
 import { userApi } from '@/lib/api';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 export default function ProgressPage() {
+    const { isLoading: authLoading } = useRequireAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [progressData, setProgressData] = useState({
         streak: 0,
         exercisesCompleted: 0,
@@ -23,36 +23,31 @@ export default function ProgressPage() {
         badgesEarned: 0,
         level: 'A2',
         levelProgress: 65,
-        weeklyActivity: [30, 45, 60, 75, 90, 0, 0], // placeholder for now
+        weeklyActivity: [30, 45, 60, 75, 90, 0, 0],
     });
 
     useEffect(() => {
         async function fetchData() {
+            if (authLoading) return;
+            
             try {
-                // Check if user is authenticated
-                const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-                setIsAuthenticated(!!token);
+                const [progressRes, streakRes] = await Promise.all([
+                    userApi.getProgress(),
+                    userApi.getStreak(),
+                ]);
 
-                if (token) {
-                    // Fetch user progress
-                    const [progressRes, streakRes] = await Promise.all([
-                        userApi.getProgress(),
-                        userApi.getStreak(),
-                    ]);
-
-                    if (progressRes.data && streakRes.data) {
-                        setProgressData({
-                            streak: streakRes.data.currentStreak,
-                            exercisesCompleted: progressRes.data.summary.totalExercises,
-                            coursesInProgress: progressRes.data.summary.coursesInProgress,
-                            badgesEarned: progressRes.data.summary.badgesEarned,
-                            level: 'A2', // TODO: Get from user profile
-                            levelProgress: 65, // TODO: Calculate from progress
-                            weeklyActivity: [30, 45, 60, 75, 90, 0, 0], // TODO: Get real weekly data
-                        });
-                    } else {
-                        setError(progressRes.error || streakRes.error || 'Failed to load progress data');
-                    }
+                if (progressRes.data && streakRes.data) {
+                    setProgressData({
+                        streak: streakRes.data.currentStreak,
+                        exercisesCompleted: progressRes.data.summary.totalExercises,
+                        coursesInProgress: progressRes.data.summary.coursesInProgress,
+                        badgesEarned: progressRes.data.summary.badgesEarned,
+                        level: 'A2',
+                        levelProgress: 65,
+                        weeklyActivity: [30, 45, 60, 75, 90, 0, 0],
+                    });
+                } else {
+                    setError(progressRes.error || streakRes.error || 'Failed to load progress data');
                 }
             } catch (err) {
                 console.error('Error fetching progress:', err);
@@ -63,9 +58,9 @@ export default function ProgressPage() {
         }
 
         fetchData();
-    }, []);
+    }, [authLoading]);
 
-    if (loading) {
+    if (authLoading || loading) {
         return (
             <main id="main-content" className="progress-page">
                 <div className="container">
@@ -126,15 +121,6 @@ export default function ProgressPage() {
                         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (<div key={i} className={`day ${progressData.weeklyActivity[i] > 0 ? 'active' : ''}`}><span className="day-label">{d}</span><div className="day-bar" style={{ height: `${progressData.weeklyActivity[i]}%` }}></div></div>))}
                     </div>
                 </div>
-
-                {!isAuthenticated && (
-                    <div className="cta-card">
-                        <Target size={32} />
-                        <h3>Fixez-vous un objectif</h3>
-                        <p>Définissez un objectif quotidien pour rester motivé</p>
-                        <Link href="/register" className="btn btn-primary">Créer un compte</Link>
-                    </div>
-                )}
             </div>
             <style jsx>{`
         .progress-page{min-height:100vh;padding:3rem 0;background:linear-gradient(135deg,var(--primary-50) 0%,var(--background) 50%)}

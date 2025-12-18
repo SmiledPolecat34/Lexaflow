@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, Clock, Users, Star, CheckCircle } from 'lucide-react';
+import { useRequireAuth } from '@/hooks/useAuth';
 
 const courses = [
     { id: 'grammar-basics', title: 'Les bases de la grammaire', description: 'Apprenez les fondamentaux', level: 'A1', levelColor: '#22c55e', duration: '4h', students: 2450, rating: 4.8, lessons: 12, image: '📚' },
@@ -12,6 +13,38 @@ const courses = [
 ];
 
 export default function CoursesPage() {
+    const { isLoading } = useRequireAuth();
+
+    if (isLoading) {
+        return (
+            <div className="loading-screen">
+                <div className="spinner" />
+                <p>Chargement...</p>
+                <style jsx>{`
+                    .loading-screen {
+                        min-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 1rem;
+                    }
+                    .spinner {
+                        width: 2rem;
+                        height: 2rem;
+                        border: 3px solid var(--muted);
+                        border-top-color: var(--primary-600);
+                        border-radius: 50%;
+                        animation: spin 0.6s linear infinite;
+                    }
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
+
     return (
         <main id="main-content" className="courses-page">
             <div className="container">

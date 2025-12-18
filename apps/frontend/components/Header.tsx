@@ -32,12 +32,12 @@ export default function Header() {
         <header className="header">
             <div className="container header-container">
                 <Link href="/" className="logo">
-                    🎓 LexaFlow
+                    <img src="/logoLexaFlox.png" alt="LexaFlow" className="logo-img" />
                 </Link>
 
                 {/* Desktop Navigation */}
                 <nav className="desktop-nav">
-                    {navLinks.map((link) => (
+                    {isAuthenticated && navLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
@@ -104,7 +104,7 @@ export default function Header() {
             {/* Mobile Navigation */}
             {mobileMenuOpen && (
                 <div className="mobile-nav">
-                    {navLinks.map((link) => (
+                    {isAuthenticated && navLinks.map((link) => (
                         <Link
                             key={link.href}
                             href={link.href}
@@ -114,7 +114,7 @@ export default function Header() {
                             {link.label}
                         </Link>
                     ))}
-                    <div className="mobile-nav-divider" />
+                    {isAuthenticated && <div className="mobile-nav-divider" />}
                     {isAuthenticated ? (
                         <>
                             <Link href="/dashboard" className="mobile-nav-link" onClick={() => setMobileMenuOpen(false)}>
@@ -196,22 +196,26 @@ export default function Header() {
         }
 
         .logo {
-          font-size: 1.875rem;
-          font-weight: 900;
-          background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
           display: flex;
           align-items: center;
           gap: 0.625rem;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
-          filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2));
         }
 
         .logo:hover {
           transform: scale(1.05);
+        }
+
+        .logo-img {
+          height: 2.5rem;
+          width: auto;
+          object-fit: contain;
+          filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.2));
+          transition: filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .logo:hover .logo-img {
           filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.3));
         }
 
@@ -226,6 +230,10 @@ export default function Header() {
             0 2px 8px rgba(99, 102, 241, 0.08),
             0 1px 2px rgba(0, 0, 0, 0.05);
           border: 1px solid rgba(99, 102, 241, 0.1);
+        }
+
+        .desktop-nav:empty {
+          display: none;
         }
 
         :global([data-theme="dark"]) .desktop-nav {

@@ -126,6 +126,12 @@ export default function ExercisesPage() {
             </div>
           </div>
 
+          {generateMutation.error && (
+            <div className="error-message">
+              <p>❌ {generateMutation.error.message || 'Une erreur est survenue lors de la génération'}</p>
+            </div>
+          )}
+
           <button
             className="btn btn-primary btn-lg generate-btn"
             onClick={handleGenerate}
@@ -385,6 +391,21 @@ export default function ExercisesPage() {
         .theme-btn.selected {
           border-color: var(--primary-500);
           background: var(--primary-50);
+        }
+
+        .error-message {
+          background: var(--error-50);
+          border: 1px solid var(--error-200);
+          border-radius: var(--radius-lg);
+          padding: 1rem;
+          margin-bottom: 1rem;
+          color: var(--error-700);
+          text-align: center;
+        }
+
+        .error-message p {
+          margin: 0;
+          font-size: 0.9375rem;
         }
 
         .generate-btn {

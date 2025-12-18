@@ -70,9 +70,13 @@ export async function api<T>(
   const accessToken = getAccessToken();
 
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...headers,
   };
+
+  // Only set Content-Type if there's a body
+  if (body) {
+    requestHeaders['Content-Type'] = 'application/json';
+  }
 
   if (accessToken) {
     requestHeaders['Authorization'] = `Bearer ${accessToken}`;
